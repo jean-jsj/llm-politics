@@ -1,7 +1,5 @@
 # llm-politics
  
-```markdown
-# Flow chart
 ```mermaid
    graph TD
       A(api_google_serp) --> B(run_process_serp)
