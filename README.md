@@ -2,9 +2,10 @@
  
 ```mermaid
    graph TD
-      A(api_google_serp) --> B(run_process_serp)
-      B --> C(run_gpt) --> E(run_merge_data)
-      B --> D(run_standardize) --> E(run_merge_data)
-      E -- output: final_query.csv --> F(api_naver_datalab) -- output: datalab_popularity.csv --> G(run_prepare_analysis)
+      A(Run api_google_serp.py) --> B(Run run_process_serp.py)
+      B --> C(Run run_gpt.py) --> E(Run run_merge_data.py)
+      B --> D(Run run_standardize.py) --> E(Run run_merge_data.py)
+      F(Run api_naver_news.py) --> E(Run run_merge_data.py)
+      E -- output: political_leaning.csv --> G(Run api_naver_datalab.py) -- output: datalab_popularity.csv --> H(Run run_prepare_analysis.py)
 ```
 ```
