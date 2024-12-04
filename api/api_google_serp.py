@@ -3,7 +3,7 @@ import argparse
 import pandas as pd
 from dotenv import load_dotenv
 import time
-from src_google_serp import *
+from src import src_google_serp
 
 load_dotenv()
 SERP_API_KEY = os.environ.get('SERP_API_KEY')
@@ -45,7 +45,7 @@ def main(args):
 		)
 		g = open(output_path,'w')
 		for entity in entities:
-			result = google_search_with_http(query=entity, SERP_API_KEY=SERP_API_KEY)
+			result =src_google_serp.google_search_with_http(query=entity, SERP_API_KEY=SERP_API_KEY)
 			g.write(result+'\n')
 			g.close()
 		et = time.time()

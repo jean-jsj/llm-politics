@@ -4,7 +4,7 @@ import argparse
 import pandas as pd
 import xml.etree.ElementTree as ET
 from openai import OpenAI
-from src_gpt import *
+from src import src_gpt
 
 
 def main(args):
@@ -16,23 +16,14 @@ def main(args):
 	'''
 	cwd = os.getcwd()
 	idx = args.idx
-	OPENAI_API_KEY = get_api_key_gpt(idx=idx)
+	OPENAI_API_KEY = src_gpt.get_api_key_gpt(idx=idx)
 	client = OpenAI(api_key=OPENAI_API_KEY)
 
-	path = os.path.join(
-		cwd,
-		str(idx),
-		'google_organic_to_gpt_'+str(idx)+'.csv'
-	)
-	df = pd.read_csv(path)
-	df = df.dropna(subset=['search_result'])
+	df = src_gpt.prepare_gpt_input(cwd,idx)
 
 	query_total = list(df['query'])
 	new_query_total = list(df['new_query'])
 	search_result_total = list(df['search_result'])
-	kg_title_total = list(df['kg_title'])
-	places_title_total = list(df['places_title'])
-	answer_box_title_total = list(df['answer_box_title'])
 	
 	# Processed data in batches of num_unit
 	num_total = len(df)
@@ -68,16 +59,13 @@ def main(args):
 
 		for sub_index in sub_index_list:
 			j = sub_index - start
-			if (str(kg_title_total[sub_index]) == 'nan') and (str(places_title_total[sub_index]) == 'nan') and (str(answer_box_title_total[sub_index]) == 'nan'):
-				answers = get_gpt_answers(
-					client=client,
-					query=new_query_total[sub_index],
-					search_results=search_result_total[sub_index],
-					max_tokens=args.max_tokens,
-				)
-				answer_list[j] = answers.replace('\n', '')
-			else:
-				answer_list[j] = 'ANSWER_EXISTS'
+			answers = src_gpt.get_gpt_answers(
+				client=client,
+				query=new_query_total[sub_index],
+				search_results=search_result_total[sub_index],
+				max_tokens=args.max_tokens,
+			)
+			answer_list[j] = answers.replace('\n', '')
 
 		df = pd.DataFrame({})
 		df['query'] = query_total[start:end] # Retain 'df['query']' as it will be used as the key to merge this dataset with others later.
@@ -87,6 +75,8 @@ def main(args):
 		
 		et = time.time()
 		print ("Start:", start, "\t End:", end, "\t Num runs:", len(sub_index_list), "\t Time:", round(et-st, 2), "(s)")
+	
+	src_gpt.run_parse_gpt_answers(cwd,idx)
 
 
 if __name__ == '__main__':

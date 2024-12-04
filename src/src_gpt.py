@@ -1,6 +1,11 @@
 import re
 import os
 from dotenv import load_dotenv
+import pandas as pd
+import glob
+import parmap
+import multiprocessing as mp
+from functools import partial
 
 load_dotenv()
 OPENAI_API_KEY_DICT = os.environ.get('OPENAI_API_KEY_DICT')
@@ -59,51 +64,6 @@ def extract_search_result(query, df):
 		result += str(snippet_list[i])
 		result += '</snippet>'
 	return query, result
-
-
-def extract_knowledge_graph(query, df_kg):
-	'''
-	1. Retrieve search engine results for each query and check whether they include Google Knowledge Graph data. 
-	2. If found, extract the 'title' field from the data
-	'''
-	condition = (df_kg['query'] == query)
-	df_ = df_kg[condition]
-	kg_title = ''
-	if len(df_) > 0:
-		title_ = str(list(df_['title'])[0])
-		if title_ != 'nan':
-			kg_title = title_
-	return kg_title
-
-
-def extract_places(query, df_places):
-	'''
-	1. Retrieve search engine results for each query and check whether they include Google Places data. 
-	2. If found, extract the 'title' field from the data
-	'''
-	condition = (df_places['query'] == query)
-	df_ = df_places[condition]
-	places_title = ''
-	if len(df_) > 0:
-		title_ = str(list(df_['title'])[0])
-		if title_ != 'nan':
-			places_title = title_
-	return places_title
-
-
-def extract_answer_box(query, df_answer_box):
-	'''
-	1. Retrieve search engine results for each query and check whether they include Google Answer Box data. 
-	2. If found, extract the 'title' field from the data
-	'''
-	condition = (df_answer_box['query'] == query)
-	df_ = df_answer_box[condition]
-	answer_box_title = ''
-	if len(df_) > 0:
-		title_ = str(list(df_['title'])[0])
-		if title_ != 'nan':
-			answer_box_title = title_
-	return answer_box_title
 
 
 def get_api_key_gpt(idx):
@@ -169,6 +129,39 @@ def get_gpt_answers(
 	return answers
 
 
+def prepare_gpt_input(cwd,idx):
+	path = os.path.join(
+		cwd,
+		str(idx),
+		'google_organic_'+str(idx)+'.csv'
+	)
+	df_organic = pd.read_csv(path)
+	query_list = list(df_organic['query'])
+	query_unique_list = list(set(query_list))
+
+	fn_ = partial(
+		extract_search_result,
+		df_organic=df_organic
+	)
+
+	result_list = parmap.map(
+		fn_,
+		query_unique_list,
+		pm_pbar=True,
+		pm_processes=mp.cpu_count(),
+	)
+
+	new_query_list = [result[0] for result in result_list]
+	new_result_list = [result[1] for result in result_list]
+
+	df_final = pd.DataFrame({})
+	df_final['query'] = query_unique_list # Retain 'df_final['query']' as it will be used as the key to merge this dataset with others later.
+	df_final['new_query'] = new_query_list
+	df_final['search_result'] = new_result_list
+	df_final = df_final.dropna(subset=['search_result'])
+	return df_final
+
+
 def parse_gpt_answers(df):
     answer_list = list(df['answer'])
     de_query_list = []
@@ -209,3 +202,26 @@ def parse_gpt_answers(df):
     df['ProperNouns'] = proper_nouns_list
     df['CommonNouns'] = common_nouns_list
     return df
+
+
+def run_parse_gpt_answers(cwd,idx):
+	df_list = []
+	path_list = glob.glob(f'./{idx}/gpt_answer_{idx}_*.csv')
+	for path in path_list:
+		df = pd.read_csv(path)
+		df_list.append(df)
+	df = pd.concat(df_list)
+
+	## Uncomment the following lines to count how many entries in the dataset have 'answer' set to 'ERROR' as a result of API call failures:
+	#condition = (df['answer'] == 'ERROR')
+	#df_ = df[condition]
+	#num_error = len(df_)
+	#print ("IDX:", idx, "\tNumber of error terminated queries:", num_error)
+
+	df_edited = parse_gpt_answers(df=df)
+	output_path = os.path.join(
+		cwd,
+		str(idx),
+		'gpt_answer_edit_'+str(idx)+'.csv'
+	)
+	df_edited.to_csv(output_path, index=False)

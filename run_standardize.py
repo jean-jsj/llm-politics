@@ -2,8 +2,7 @@ import os
 import time
 import argparse
 import pandas as pd
-
-from src_standardize import *
+from src import src_standardize
 
 
 def get_df(
@@ -13,6 +12,7 @@ def get_df(
 	):
 	path = os.path.join(
 		cwd,
+		str(idx),
 		'google_'+type_+'_'+str(idx)+'.csv'
 	)
 	df = pd.read_csv(path, engine='python')
@@ -52,10 +52,11 @@ def main(args):
 	)
 	output_path = os.path.join(
 		cwd,
+		str(idx),
 		'standardize_'+str(idx)+'.csv'
 	)
 	
-	run_standardization(
+	src_standardize.run_standardization(
 		df_summary=df_summary,
 		df_organic=df_organic,
 		df_knowledgeGraph=df_knowledgeGraph,

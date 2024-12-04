@@ -1,9 +1,10 @@
 import time
 import urllib.request
-import argparse
 import json
+import glob
 import pandas as pd
 import os
+from sklearn.preprocessing import MinMaxScaler
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -60,8 +61,38 @@ class NaverDataLab():
 		
 		return df
 
-def main(args):
-	idx = args.idx
+
+def find_max(df, query):
+	sub_df = df[df['query'] == query]
+	return sub_df['ratio'].max()
+
+
+def datalab_preprocess():
+	'''
+	# 'datalab_naver_*.csv' was created using the NAVER DATALAB API
+	# For each search query, the relative search frequency ratio is recorded by month, showing how the search frequency compares to the reference term's frequency.
+	# The frequency with which people search for the same query fluctuates over time. 
+	# We define the maximum value in the time series as the popularity value for each search query.		
+	'''
+	df = pd.DataFrame()
+	path_files = glob.glob('./datalab_naver_*.csv')
+	for path in path_files:
+		sub_df = pd.read_csv(path)		
+		df = pd.concat([df,sub_df],ignore_index=True)
+
+	query_list = list(set(df['final_query']))
+	popularity_list = []
+	for query in query_list:
+		popularity = find_max(df,query)
+		popularity_list.append(popularity)
+	result = pd.DataFrame(list(zip(query_list,popularity_list)), columns = ['final_query', 'datalab'])
+	
+	scaler = MinMaxScaler()
+	result[['scaled_datalab']] = scaler.fit_transform(result[['datalab']])
+	return result
+
+
+def main():
 	startDate = "2022-09-01"
 	endDate = "2023-09-01"
 	timeUnit = 'month'
@@ -69,51 +100,51 @@ def main(args):
 	ages = []
 	gender = ''
 	
-	df = pd.read_csv('data.csv')
-	query_list = list(df['edit_query'])
+	df = pd.read_csv('final_query.csv')
+	query_list = list(df['final_query'])
 	total_len = len(query_list)
 
 	# NAVER API allows a maximum of 25,000 calls per day -> Limit each idx to 20,000 calls per day, making 10 separate batches of 2,000 calls each.
-	for i in range(10):
-		print('num_unit: ',i)
-		start = i*2000
-		end = (i+1)*2000
-		if end > total_len:
-			end = total_len
-		query = query_list[start:end]
-		client_id, client_secret = NAVER_DICT[i]
-		response_results_all = pd.DataFrame()
+	for idx in range(1,41):
+		for i in range(10):
+			print('num_unit: ',i)
+			start = i*2000
+			end = (i+1)*2000
+			if end > total_len:
+				end = total_len
+			query = query_list[start:end]
+			client_id, client_secret = NAVER_DICT[idx]
+			response_results_all = pd.DataFrame()
 
-		for j in range(500):
-			time.sleep(0.3)
-			keyword1 = query[(j*4)]
-			keyword2 = query[(j*4)+1]
-			keyword3 = query[(j*4)+2]
-			keyword4 = query[(j*4)+3]
-			keyword_group_set = {
-				'keyword_group_1': {'groupName': "경복궁", 'keywords': ["경복궁"]},
-				'keyword_group_2': {'groupName': f"{keyword1}", 'keywords': [f"{keyword1}"]},
-				'keyword_group_3': {'groupName': f"{keyword2}", 'keywords': [f"{keyword2}"]},
-				'keyword_group_4': {'groupName': f"{keyword3}", 'keywords': [f"{keyword3}"]},
-				'keyword_group_5': {'groupName': f"{keyword4}", 'keywords': [f"{keyword4}"]},
-			}
-			naver = NaverDataLab(client_id=client_id,client_secret=client_secret)
-			naver.add_keywordGroup(keyword_group_set['keyword_group_1'])
-			naver.add_keywordGroup(keyword_group_set['keyword_group_2'])
-			naver.add_keywordGroup(keyword_group_set['keyword_group_3'])
-			naver.add_keywordGroup(keyword_group_set['keyword_group_4'])
-			naver.add_keywordGroup(keyword_group_set['keyword_group_5'])
-	
-			response_results = naver.naver_datalab_api(startDate,endDate,timeUnit,device,ages,gender)
-			response_results_all = pd.concat([response_results_all,response_results],ignore_index=True)
+			for j in range(500):
+				time.sleep(0.3)
+				keyword1 = query[(j*4)]
+				keyword2 = query[(j*4)+1]
+				keyword3 = query[(j*4)+2]
+				keyword4 = query[(j*4)+3]
+				keyword_group_set = {
+					'keyword_group_1': {'groupName': "경복궁", 'keywords': ["경복궁"]},
+					'keyword_group_2': {'groupName': f"{keyword1}", 'keywords': [f"{keyword1}"]},
+					'keyword_group_3': {'groupName': f"{keyword2}", 'keywords': [f"{keyword2}"]},
+					'keyword_group_4': {'groupName': f"{keyword3}", 'keywords': [f"{keyword3}"]},
+					'keyword_group_5': {'groupName': f"{keyword4}", 'keywords': [f"{keyword4}"]},
+				}
+				naver = NaverDataLab(client_id=client_id,client_secret=client_secret)
+				naver.add_keywordGroup(keyword_group_set['keyword_group_1'])
+				naver.add_keywordGroup(keyword_group_set['keyword_group_2'])
+				naver.add_keywordGroup(keyword_group_set['keyword_group_3'])
+				naver.add_keywordGroup(keyword_group_set['keyword_group_4'])
+				naver.add_keywordGroup(keyword_group_set['keyword_group_5'])
 		
-		path = 'datalab_naver_'+str(idx)+'_'+str(i)+'.csv'
-		response_results_all.to_csv(path,index=False)
+				response_results = naver.naver_datalab_api(startDate,endDate,timeUnit,device,ages,gender)
+				response_results_all = pd.concat([response_results_all,response_results],ignore_index=True)
+			
+			path = 'datalab_naver_'+str(idx)+'_'+str(i)+'.csv'
+			response_results_all.to_csv(path,index=False)
+
+	datalab_df = datalab_preprocess()
+	datalab_df.to_csv('datalab_popularity.csv')
 
 
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--idx', type=int, required=True,
-						help='idx')
-	args = parser.parse_args()
-	main(args)
+	main()

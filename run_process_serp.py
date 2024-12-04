@@ -1,7 +1,7 @@
 import os
 import time
 import argparse
-from src_google_serp import *
+from src import src_google_serp
 
 def main(args):
 	cwd = os.getcwd()
@@ -12,53 +12,53 @@ def main(args):
 		cwd,
 		str(idx),
 	)
-	content_list = get_content_list(
+	content_list = src_google_serp.get_content_list(
 		idx=idx,
 	)
 	# Summary
-	google_summary(
+	src_google_serp.google_summary(
 		dir_=dir_,
 		idx=idx,
 		content_list=content_list
 	)
 	# Knowledge Graph
-	google_knowledge_graph(
+	src_google_serp.google_knowledge_graph(
 		dir_=dir_,
 		idx=idx,
 		content_list=content_list
 	)
 	# Places
-	google_places(
+	src_google_serp.google_places(
 		dir_=dir_,
 		idx=idx,
 		content_list=content_list
 	)
 	# Organic
-	google_organic(
+	src_google_serp.google_organic(
 		dir_=dir_,
 		idx=idx,
 		content_list=content_list
 	)
 	# RelatedSearches
-	google_related_searches(
+	src_google_serp.google_related_searches(
 		dir_=dir_,
 		idx=idx,
 		content_list=content_list
 	)
 	# PeopleAlsoAsk
-	google_also_ask(
+	src_google_serp.google_also_ask(
 		dir_=dir_,
 		idx=idx,
 		content_list=content_list
 	)
 	# AnswerBox
-	google_answer_box(
+	src_google_serp.google_answer_box(
 		dir_=dir_,
 		idx=idx,
 		content_list=content_list
 	)
 	# TopStories
-	google_top_stories(
+	src_google_serp.google_top_stories(
 		dir_=dir_,
 		idx=idx,
 		content_list=content_list
