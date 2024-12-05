@@ -1,11 +1,32 @@
-# llm-politics
- 
-```mermaid
-   graph TD
-      A(Run api_google_serp.py) --> B(Run run_process_serp.py)
-      B --> C(Run run_gpt.py) --> E(Run run_merge_data.py)
-      B --> D(Run run_standardize.py) --> E(Run run_merge_data.py)
-      F(Run api_naver_news.py) --> E(Run run_merge_data.py)
-      E -- output: political_leaning.csv --> G(Run api_naver_datalab.py) -- output: popularity.csv --> H(Run run_prepare_analysis.py)
+<div align='center'>
+</div>
+
+## Usage
+
+#### 1. Install requirements 
+```python 
+pip install -r requirements.txt
 ```
+
+#### 2. Update .env
+1) OPENAI_API_KEY_DICT: A dictionary mapping each index to <YOUR_OPENAI_API_KEY>.
+2) SERP_API_KEY: Your API key for [serper.dev.](https://serper.dev/.)
+3) NAVER_DICT: A dictionary mapping each index to your API key for [Naver Developers.](https://developers.naver.com/main/.)
+
+
+#### 3. Use a comma-separated list of search queries as input to fetch data from both the Google SERP API and the Naver News API
+```python 
+python run_api.py
+```
+
+#### 4. Standardize each search query using one of two approaches
+```python 
+python run_process_data.py
+```
+
+#### 5. Define the final variables for analysis
+> See the 'results' folder in this repository for further details
+
+```python 
+python run_merge_data.py
 ```
