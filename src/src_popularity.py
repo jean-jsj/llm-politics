@@ -19,3 +19,9 @@ def sample_popularity_by_search_engines(search_df):
 	total_df = pd.merge(search_df,duplicate_df,on=['search_engine','final_query'])
 	result = total_df.groupby(['panel','week_num'])['duplicates'].mean().reset_index(name='search_engine_avg_dup')
 	return result
+
+def save_sample_popularity(search_df,datalab_df):
+	# save query level popularity variables as separate data
+	popularity_df = search_df.groupby(['final_query'])['final_query'].count().reset_index(name='duplicates')
+	query_popularity = pd.merge(datalab_df,popularity_df,on=['final_query'],how='outer')
+	return query_popularity

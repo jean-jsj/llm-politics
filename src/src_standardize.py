@@ -2,6 +2,19 @@ import re
 import time
 import pandas as pd
 
+def get_df(
+		cwd,
+		idx,
+		type_,
+	):
+	path = os.path.join(
+		cwd,
+		str(idx),
+		'google_'+type_+'_'+str(idx)+'.csv'
+	)
+	df = pd.read_csv(path, engine='python')
+	return df
+
 
 def title_standardize(title):
 	title = title.replace('<b>','')

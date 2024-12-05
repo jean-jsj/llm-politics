@@ -2,7 +2,7 @@ import pandas as pd
 from src import src_popularity
 from src import src_political_leaning
 from src import src_other
-
+ 
 def main():
 	search_df = pd.read_csv('nielsen_search_final.csv')
 	datalab_df = pd.read_csv('datalab_popularity')
@@ -23,11 +23,6 @@ def main():
 	balanced_df = pd.merge(balanced_df, unique_df,on=['panel','week_num'], how='left')
 	balanced_df = balanced_df.fillna(0)
 
-	## Uncomment the following lines to save query level popularity variables as separate data
-	#popularity_df = search_df.groupby(['final_query'])['final_query'].count().reset_index(name='duplicates')
-	#query_popularity = pd.merge(datalab_df,popularity_df,on=['final_query'],how='outer')
-	#query_popularity.to_csv('popularity.csv',index=False)
-
 	# popularity
 	datalab_df =src_popularity.datalab_popularity(search_df,datalab_df)
 	popularity_df = src_popularity.sample_popularity(search_df)
@@ -35,7 +30,7 @@ def main():
 	balanced_df = pd.merge(balanced_df,datalab_df,on=['panel','week_num'],how='left')	
 	balanced_df = pd.merge(balanced_df,popularity_df,on=['panel','week_num'],how='left')
 	balanced_df = pd.merge(balanced_df,popularity_se_df,on=['panel','week_num'],how='left')
-	
+	 
 	# political leaning
 	search_politic_df = pd.merge(search_df,leaning_df,on='query')
 	avg_w_leaning = search_politic_df.groupby(['panel','week_num'])['w_leaning'].mean().reset_index(name='avg_w_leaning')

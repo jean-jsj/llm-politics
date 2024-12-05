@@ -1,14 +1,10 @@
 import re
 import os
-from dotenv import load_dotenv
 import pandas as pd
 import glob
 import parmap
 import multiprocessing as mp
 from functools import partial
-
-load_dotenv()
-OPENAI_API_KEY_DICT = os.environ.get('OPENAI_API_KEY_DICT')
 
 SYSTEM_PROMPT = """
 You are a senior nlp assistant that identifies nouns in the given query, using the given context(delimited with XML tags) as reference. Let's try this step by step.
@@ -64,16 +60,6 @@ def extract_search_result(query, df):
 		result += str(snippet_list[i])
 		result += '</snippet>'
 	return query, result
-
-
-def get_api_key_gpt(idx):
-	'''
-	Retrieve the API key assigned to each CPU from OPENAI_API_KEY_DICT
-	'''
-	num_keys = len(OPENAI_API_KEY_DICT)
-	key = (idx-1) % 10
-	api_key = OPENAI_API_KEY_DICT[key][0]
-	return api_key
 
 
 def get_completion(
@@ -160,6 +146,65 @@ def prepare_gpt_input(cwd,idx):
 	df_final['search_result'] = new_result_list
 	df_final = df_final.dropna(subset=['search_result'])
 	return df_final
+
+
+def run_api_gpt(cwd,idx,num_unit,max_tokens,client,df):
+	'''
+	To handle occasional API call failures, the data must be processed in batches of num_unit. 
+    A separate for-loop is used for each batch, where the 'answer_list' variable is defined and saved to a CSV file.  
+    Since the size of the input data ({type}_total lists) and the size of the data processed within each for-loop (answer_list) differ, 
+	we define 'sub_index_list' to ensure consistent indexing across all batches.
+	'''
+
+	query_total = list(df['query'])
+	new_query_total = list(df['new_query'])
+	search_result_total = list(df['search_result'])
+	
+	# Processed data in batches of num_unit
+	num_total = len(df)
+	num_files = num_total // num_unit
+	if num_total % num_unit > 0:
+		num_files += 1
+
+	for i in range(num_files):
+		start = i*num_unit
+		end = (i+1)*num_unit
+		if i == (num_files-1):
+			end = num_total
+
+		sub_index_list = list(range(start, end))
+		# Pre-fill answer_list with 'ERROR' in case of GPT API call failure. If the API call is successful, replace 'ERROR' with the GPT response.
+		answer_list = ['ERROR' for _ in range(len(sub_index_list))]
+		answer_path = os.path.join(
+			cwd,
+			str(idx),
+			'gpt_answer_'+str(idx)+'_'+str(start)+'_'+str(end)+'.csv'
+		)
+		## If, after running the entire code in this Python file, the 'answer_list' variable in the saved data is marked 'ERROR', it indicates an API call failure.
+	    ## Uncomment the following lines and re-run the entire file to handle those cases.
+		#if os.path.exists(answer_path):
+		#	df_answer = pd.read_csv(answer_path)
+		#	df_answer['sub_index'] = sub_index_list
+		#	answer_list = list(df_answer['answer'])
+		#	condition = (df_answer['answer'] == 'ERROR')
+		#	df_answer = df_answer[condition]
+		#	sub_index_list = list(df_answer['sub_index'])
+
+		for sub_index in sub_index_list:
+			j = sub_index - start
+			answers = get_gpt_answers(
+				client=client,
+				query=new_query_total[sub_index],
+				search_results=search_result_total[sub_index],
+				max_tokens=max_tokens,
+			)
+			answer_list[j] = answers.replace('\n', '')
+
+		df = pd.DataFrame({})
+		df['query'] = query_total[start:end] # Retain 'df['query']' as it will be used as the key to merge this dataset with others later.
+		df['new_query'] = new_query_total[start:end]
+		df['answer'] = answer_list
+		df.to_csv(answer_path, index=False)
 
 
 def parse_gpt_answers(df):

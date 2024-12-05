@@ -5,10 +5,6 @@ import glob
 import pandas as pd
 import os
 from sklearn.preprocessing import MinMaxScaler
-from dotenv import load_dotenv
-
-load_dotenv()
-NAVER_DICT = os.getenv("NAVER_DICT")
 
 class NaverDataLab():
 	def __init__(self, client_id, client_secret):
@@ -66,7 +62,7 @@ def find_max(df, query):
 	sub_df = df[df['query'] == query]
 	return sub_df['ratio'].max()
 
-
+d
 def datalab_preprocess():
 	'''
 	# 'datalab_naver_*.csv' was created using the NAVER DATALAB API
@@ -89,10 +85,11 @@ def datalab_preprocess():
 	
 	scaler = MinMaxScaler()
 	result[['scaled_datalab']] = scaler.fit_transform(result[['datalab']])
+	result.to_csv('datalab_popularity.csv')
 	return result
 
 
-def main():
+def run_api_naver_datalab(NAVER_DICT):
 	startDate = "2022-09-01"
 	endDate = "2023-09-01"
 	timeUnit = 'month'
@@ -141,10 +138,3 @@ def main():
 			
 			path = 'datalab_naver_'+str(idx)+'_'+str(i)+'.csv'
 			response_results_all.to_csv(path,index=False)
-
-	datalab_df = datalab_preprocess()
-	datalab_df.to_csv('datalab_popularity.csv')
-
-
-if __name__ == '__main__':
-	main()

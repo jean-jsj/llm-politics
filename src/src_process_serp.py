@@ -7,7 +7,7 @@ import http.client
 import json
 
 
-def google_search_with_http(query, SERP_API_KEY):
+def api_google_serp(query, SERP_API_KEY):
 	conn = http.client.HTTPSConnection("google.serper.dev")
 	payload = json.dumps({
 		"q": query
@@ -27,6 +27,40 @@ def google_search_with_http(query, SERP_API_KEY):
 	result = data.decode("utf-8")
 	return result
 
+def run_api_google_serp(cwd,idx,num_unit,SERP_API_KEY):
+	input_path = os.path.join(
+		cwd,
+		str(idx),
+		'raw_'+str(idx)+'.txt'
+	)
+	f = open(input_path, 'r')
+	lines = f.readlines()
+	f.close()
+	entity_list = [l.strip() for l in lines]
+	
+    # Processed data in batches of num_unit
+	num_total = len(entity_list)
+	num_files = num_total // num_unit
+	if num_total % num_unit > 0:
+		num_files += 1
+
+	for i in range(num_files):
+		start = i*num_unit
+		end = (i+1)*num_unit
+		if i == (num_files-1):
+			end = num_total
+			
+		entities = entity_list[start:end]
+		output_path = os.path.join(
+			cwd,
+    		str(idx),
+			'search_'+str(idx)+'_'+str(start)+'_'+str(end)+'.txt'
+		)
+		g = open(output_path,'w')
+		for entity in entities:
+			result =api_google_serp(query=entity, SERP_API_KEY=SERP_API_KEY)
+			g.write(result+'\n')
+			g.close()
 
 def get_content_list(idx):
 	content_list = []
