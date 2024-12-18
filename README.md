@@ -14,7 +14,7 @@ pip install -r requirements.txt
 3) NAVER_DICT: A dictionary mapping each index to your API key for [Naver Developers.](https://developers.naver.com/main/.)
 
 
-#### 3. Use a comma-separated list of search queries as input to fetch data from both the Google SERP API and the Naver News API
+#### 3. Retrieve data from both the Google SERP API and the Naver News API
 ```python 
 python run_api.py
 ```
