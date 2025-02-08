@@ -13,10 +13,10 @@ We calculate the political leaning of each search query using four approaches:
 ### Table 1. Descriptive Statistics
 | Variable | Mean | Standard Deviation | Min | Max
 |-----:|---------------|-----------|-----------|-----------
-|rw_leaning| 0.009  | 0.916  | -4.278 | 3.826
-|nw_leaning| -0.002 | 0.193 | -1 | 1
-|rw_nn_leaning| -0.007 | 1.401 | -4.278 | 4.118
-|nw_nn_leaning| -0.017 | 0.472 | -1 | 1
+|rw_leaning| 0.057  | 0.22  | -1 | 1
+|nw_leaning| -0.002 | 0.19 | -1 | 1
+|rw_nn_leaning| 0.017 | 0.33 | -1 | 1
+|nw_nn_leaning| -0.017 | 0.47 | -1 | 1
 
 ### Table 2. Correlation
 |  | rw_leaning | nw_leaning | rw_nn_leaning | nw_nn_leaning
